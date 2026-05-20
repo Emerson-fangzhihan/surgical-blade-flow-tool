@@ -95,11 +95,17 @@ def detect_col(df: pd.DataFrame, role: str) -> int | None:
 
 def auto_detect_header(xl_bytes: bytes, sheet_name: str) -> int:
     """自动检测表头所在行（0-based）"""
-    df_raw = pd.read_excel(io.BytesIO(xl_bytes), sheet_name=sheet_name, header=None, nrows=15)
-    for i, row in df_raw.iterrows():
-        row_str = " ".join(row.astype(str))
-        if "货品名称" in row_str or "品名" in row_str or "购货单位" in row_str or "客户" in row_str:
-            return i
+    try:
+        df_raw = pd.read_excel(io.BytesIO(xl_bytes), sheet_name=sheet_name, header=None, nrows=15)
+        for i, row in df_raw.iterrows():
+            try:
+                row_str = " ".join(str(x) if pd.notna(x) else "" for x in row)
+                if any(kw in row_str for kw in ["货品名称", "品名", "购货单位", "客户", "单位名称"]):
+                    return i
+            except Exception:
+                continue
+    except Exception:
+        pass
     return 0
 
 # ─────────────────────────────────────────────
